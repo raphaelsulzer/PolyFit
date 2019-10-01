@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "linear_program_solver.h"
 
 #include <iostream>
-
+#include <cmath>
 
 bool LinearProgramSolver::check_program(const LinearProgram* program) const {
 	if (program->objective()->sense() == LinearObjective::UNDEFINED) {
@@ -49,7 +49,7 @@ void LinearProgramSolver::upload_solution(const LinearProgram* program) {
 		Variable* v = variables[i];
 		v->set_solution_value(result_[i]);
 		if (v->variable_type() != Variable::CONTINUOUS)
-			result_[i] = static_cast<int>(std::round(result_[i]));
+			result_[i] = static_cast<int>(round(result_[i]));
 	}
 }
 
