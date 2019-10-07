@@ -78,7 +78,6 @@ bool LinearProgramSolver::_solve_SCIP(const LinearProgram* program) {
 		}
 
 		// Add constraints
-
 		std::vector<SCIP_CONS*> scip_constraints;
 		const std::vector<LinearConstraint*>& constraints = program->constraints();
 		for (std::size_t i = 0; i < constraints.size(); ++i) {
@@ -118,7 +117,7 @@ bool LinearProgramSolver::_solve_SCIP(const LinearProgram* program) {
 		const LinearObjective* objective = program->objective();
 		const std::unordered_map<int, double>& obj_coeffs = objective->coefficients();
 		std::unordered_map<int, double>::const_iterator it = obj_coeffs.begin();
-		for (; it != obj_coeffs.end(); ++it) {
+        for (; it != obj_coeffs.end(); ++it){
 			std::size_t var_idx = it->first;
 			double coeff = it->second;
 //			SCIP_CALL(SCIPfreeTransform(scip));

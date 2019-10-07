@@ -58,6 +58,7 @@
 #else
 
 #include <unistd.h>
+#include <cstring>
 
 #endif
 
@@ -84,11 +85,11 @@ namespace Memory {
 	typedef byte* pointer ;
 
 	inline void clear(void* addr, size_t size) {
-		::memset(addr, 0, size) ;
+        std::memset(addr, 0, size) ;
 	}
 
 	inline void copy(void* to, const void* from, size_t size) {
-		::memcpy(to, from, size) ;
+        std::memcpy(to, from, size) ;
 	}
 
 } 
