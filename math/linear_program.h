@@ -236,7 +236,7 @@ public:
 	// clear all variables, constraints, and the objective.
 	void clear();
 	
-private:
+protected:
 	std::string			name_;
 	LinearObjective*	objective_;
 

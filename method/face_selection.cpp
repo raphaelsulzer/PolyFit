@@ -108,6 +108,7 @@ void FaceSelection::optimize(const HypothesisGenerator::Adjacency& adjacency, Li
 	//double coeff_coverage = Method::lambda_model_coverage / model_->bbox().area();
 	//double coeff_complexity = Method::lambda_model_complexity / double(fans.size());
 	// choose a better scale
+	// HERE THE DATA ATTACHMENT ENERGIES GET SET
 	double coeff_data_fitting = Method::lambda_data_fitting;
 	double coeff_coverage = total_points * Method::lambda_model_coverage / model_->bbox().area();
 	double coeff_complexity = total_points * Method::lambda_model_complexity / double(adjacency.size());

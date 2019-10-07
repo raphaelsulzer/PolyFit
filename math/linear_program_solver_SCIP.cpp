@@ -79,23 +79,32 @@ bool LinearProgramSolver::_solve_SCIP(const LinearProgram* program) {
 
 		// Add constraints
 
+
 		std::vector<SCIP_CONS*> scip_constraints;
 		const std::vector<LinearConstraint*>& constraints = program->constraints();
 		for (std::size_t i = 0; i < constraints.size(); ++i) {
 			const LinearConstraint* c = constraints[i];
 			const std::unordered_map<int, double>& coeffs = c->coefficients();
-			std::unordered_map<int, double>::const_iterator cur = coeffs.begin();
-
 			std::vector<SCIP_VAR*>	cstr_variables(coeffs.size());
 			std::vector<double>		cstr_values(coeffs.size());
 			std::size_t idx = 0;
-			for (; cur != coeffs.end(); ++cur) {
+			std::unordered_map<int, double>::const_iterator cur;
+			for (cur = coeffs.begin(); cur != coeffs.end(); ++cur) {
 				std::size_t var_idx = cur->first;
 				double coeff = cur->second;
+				// Logger::out("---") <<  "fan:  " << i << " constraint: " << idx << std::endl;
+				// Logger::out("---") <<  "coefficient: " <<  coeff << " constraint: " << scip_variables[var_idx] << std::endl;
+				std::cout <<  "fan:  " << i << " constraint: " << idx << std::endl;
+				// std::cout <<  "coefficient: " <<  coeff << " variable: " << scip_variables[var_idx]->data() << std::endl;
 				cstr_variables[idx] = scip_variables[var_idx];
 				cstr_values[idx] = coeff;
 				++idx;
 			}
+			std::cout << "constraint: " << std::endl;
+			std::cout << *cstr_values.data() << std::endl;
+
+			std::cout << "variables: " << std::endl;
+			std::cout << *cstr_variables.data() << std::endl;
 
 			// create SCIP_CONS object
 			SCIP_CONS* cons = 0;
@@ -111,6 +120,8 @@ bool LinearProgramSolver::_solve_SCIP(const LinearProgram* program) {
 			// store the constraint for later on
 			scip_constraints.push_back(cons);
 		}
+
+		std::cout.flush();
 
 		// set objective
 
