@@ -33,6 +33,7 @@ class Map;
 class PointSet;
 class VertexGroup;
 class MapEditor;
+class ProgressLogger;
 
 namespace MapTypes {
 	class Vertex;
@@ -53,11 +54,11 @@ public:
 	void compute_confidences(Map* mesh, bool use_conficence = false);
 
 	// Intersection: a set of 'faces' intersecting at a common edge
-	struct Intersection : public std::vector<MapTypes::Halfedge*> {
+	struct SuperEdge : public std::vector<MapTypes::Halfedge*> {
 		const vec3* s;
 		const vec3* t;
 	};
-	typedef typename std::vector<Intersection>		Adjacency;
+	typedef typename std::vector<SuperEdge>		Adjacency;
 
 	// the adjacency information will be used to formulate the hard constraints.
 	Adjacency extract_adjacency(Map* mesh);
@@ -79,33 +80,39 @@ private:
 	void merge(VertexGroup* g1, VertexGroup* g2);
 
 	// test if face 'f' insects plane 'plane'
-	bool do_intersect(MapTypes::Facet* f, MapTypes::Facet* plane);
+	bool do_intersect(MapTypes::Facet* f, Plane3d* plane);
 
+    struct Intersection {
+        enum Type { EXISTING_VERTEX, NEW_VERTEX };
 
-	struct EdgePos {
-		EdgePos(MapTypes::Halfedge* e, const vec3& p) : edge(e), pos(p) {}
-		MapTypes::Halfedge* edge;
-		vec3				pos;
-	};
+        Intersection(Type t) : type(t), vtx(0), edge(0) {}
+        Type type;
+
+        // for EXISTING_VERTEX
+        Map::Vertex* vtx;
+
+        // for NEW_VERTEX
+        MapTypes::Halfedge* edge;
+        vec3				pos;
+    };
 
 	// compute the intersecting points of a face 'f' and a 'plane'. The intersecting points are returned 
 	// by 'existing_vts' (if the plane intersects the face at its vertices) and 'new_vts' (if the plane 
 	// intersects the face at its edges).
-	void compute_intersections(
-		MapTypes::Facet* f,
-		MapTypes::Facet* plane,
-		std::vector<MapTypes::Vertex*>& existing_vts,
-		std::vector<EdgePos>& new_vts
-		);
+    void compute_intersections(
+            MapTypes::Facet* f,
+            Plane3d* plane,
+            std::vector<Intersection>& intersections
+    );
 
-	std::vector<MapTypes::Facet*> cut(MapTypes::Facet* f, MapTypes::Facet* cutter, Map* mesh);
+	std::vector<MapTypes::Facet*> cut(MapTypes::Facet* f, Plane3d* cutter, Map* mesh);
 
 	// split an existing edge, meanwhile, assign the new edges the original source faces (the old edge 
 	// lies in the intersection of the two faces)
-	MapTypes::Vertex* split_edge(const EdgePos& ep, MapEditor* editor, MapTypes::Facet* cutter);
+	MapTypes::Vertex* split_edge(const Intersection& ep, MapEditor* editor, Plane3d* cutting_plane);
 
 	// collect all faces in 'mesh' that intersect 'face'
-	std::set<MapTypes::Facet*> collect_intersecting_faces(MapTypes::Facet* face, Map* mesh);
+	std::set<Plane3d *> collect_cutting_planes(MapTypes::Facet* face, Map* mesh);
 
 	void triplet_intersection();
 
@@ -126,7 +133,7 @@ private:
 	float facet_points_projected_in(PointSet* pset, VertexGroup* g, MapTypes::Facet* f, float max_dist, std::vector<unsigned int>& points);
 
 	// returns average spacing
-	float compute_point_confidences(PointSet* pset, int s1 = 6, int s2 = 16, int s3 = 32);
+	float compute_point_confidences(PointSet* pset, int s1 = 6, int s2 = 16, int s3 = 32, ProgressLogger* progress = nullptr);
 
 	// clear cached intermediate results
 	void clear();

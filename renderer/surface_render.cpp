@@ -25,6 +25,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "../model/map_geometry.h" 
 #include "../math/quaternion.h"
 
+/* this is how we can safely include GLU */
+#if defined(__APPLE__) && defined(__MACH__)
+#   include <OpenGL/glu.h>
+#else
+#    include <GL/glu.h>
+#endif
 
 static GLUquadric* g_quadric = 0;
 
@@ -159,26 +165,19 @@ void SurfaceRender::draw_mesh(Map* mesh) {
 void SurfaceRender::draw_corner_edges(Map* mesh, bool interacting) {
 	glColor4fv(sharp_edge_style_.color.data());
 
+    MapHalfedgeAttribute<bool> edge_is_sharp(mesh, "SharpEdge");
+
 	if (interacting) {
 		glDisable(GL_LIGHTING);
 		glLineWidth(sharp_edge_style_.width + 1.0f);
 		glBegin(GL_LINES);
 		FOR_EACH_EDGE_CONST(Map, mesh, it) {
-			bool need_draw = it->is_border_edge();
-
-			if (!it->is_border_edge()) {
-				const vec3& n1 = Geom::facet_normal(it->facet());
-				const vec3& n2 = Geom::facet_normal(it->opposite()->facet());
-				if (std::abs(dot(n1, n2)) > 0.99)
-					need_draw = false;
-			}
-
-			if (need_draw) {
-				const vec3& t = it->vertex()->point();
-				glVertex3fv(t.data());
-				const vec3& s = it->opposite()->vertex()->point();
-				glVertex3fv(s.data());
-			}
+            if (edge_is_sharp[it] || it->is_border_edge()) {
+                const vec3& t = it->vertex()->point();
+                glVertex3fv(t.data());
+                const vec3& s = it->opposite()->vertex()->point();
+                glVertex3fv(s.data());
+            }
 		}
 		glEnd();
 	}
@@ -197,30 +196,21 @@ void SurfaceRender::draw_corner_edges(Map* mesh, bool interacting) {
 		glShadeModel(GL_SMOOTH);
 
 		FOR_EACH_EDGE_CONST(Map, mesh, it) {
-			bool need_draw = it->is_border_edge();
+            if (edge_is_sharp[it] || it->is_border_edge()) {
+                glPushMatrix();
+                const vec3& t = it->vertex()->point();
+                glTranslated(t.x, t.y, t.z);
+                gluSphere(g_quadric, r, slices, slices);
+                glPopMatrix();
 
-			if (!it->is_border_edge()) {
-				const vec3& n1 = Geom::facet_normal(it->facet());
-				const vec3& n2 = Geom::facet_normal(it->opposite()->facet());
-				if (std::abs(dot(n1, n2)) > 0.99)
-					need_draw = false;
-			}
-
-			if (need_draw) {
-				glPushMatrix();
-				const vec3& t = it->vertex()->point();
-				glTranslated(t.x, t.y, t.z);
-				gluSphere(g_quadric, r, slices, slices);
-				glPopMatrix();
-
-				glPushMatrix();
-				const vec3& s = it->opposite()->vertex()->point();
-				glTranslated(s.x, s.y, s.z);
-				gluSphere(g_quadric, r, slices, slices);
-				glMultMatrixd(Quaternion(vec3(0, 0, 1), Geom::vector(it)).matrix());
-				gluCylinder(g_quadric, r, r, Geom::edge_length(it), slices, 1);
-				glPopMatrix();
-			}
+                glPushMatrix();
+                const vec3& s = it->opposite()->vertex()->point();
+                glTranslated(s.x, s.y, s.z);
+                gluSphere(g_quadric, r, slices, slices);
+                glMultMatrixd(Quaternion(vec3(0, 0, 1), Geom::vector(it)).matrix());
+                gluCylinder(g_quadric, r, r, Geom::edge_length(it), slices, 1);
+                glPopMatrix();
+            }
 		}
 	}
 }

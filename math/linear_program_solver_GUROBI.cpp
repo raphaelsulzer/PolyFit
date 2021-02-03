@@ -50,7 +50,11 @@ bool LinearProgramSolver::_solve_GUROBI(const LinearProgram* program) {
 		if (!check_program(program))
 			return false;
 
-		GRBEnv env = GRBEnv();
+		// I am using an academic license of Gurobi. Each time when a Gurobi environment is created, it pops up a
+		// notice "Academic license - for non-commercial use only".
+		// It is not possible to suppress this notice completely, but we can get the Gurobi environment only once and
+		// reuse it later on.
+		static GRBEnv env = GRBEnv();
 		env.set(GRB_IntParam_LogToConsole, 0);
 
 		GRBModel model = GRBModel(env);
@@ -84,7 +88,7 @@ bool LinearProgramSolver::_solve_GUROBI(const LinearProgram* program) {
 			const std::unordered_map<int, double>& coeffs = c->coefficients();
 			std::unordered_map<int, double>::const_iterator cur = coeffs.begin();
 			for (; cur != coeffs.end(); ++cur) {
-				std::size_t var_idx = cur->first;
+                std::size_t var_idx = static_cast<std::size_t>(cur->first);
 				double coeff = cur->second;
 				expr += coeff * X[var_idx];
 			}
@@ -119,7 +123,7 @@ bool LinearProgramSolver::_solve_GUROBI(const LinearProgram* program) {
 		const std::unordered_map<int, double>& obj_coeffs = objective->coefficients();
 		std::unordered_map<int, double>::const_iterator it = obj_coeffs.begin();
 		for (; it != obj_coeffs.end(); ++it) {
-			std::size_t var_idx = it->first;
+            std::size_t var_idx = static_cast<std::size_t>(it->first);
 			double coeff = it->second;
 			obj += coeff * X[var_idx];
 		}
@@ -128,11 +132,11 @@ bool LinearProgramSolver::_solve_GUROBI(const LinearProgram* program) {
 		model.setObjective(obj, minimize ? GRB_MINIMIZE : GRB_MAXIMIZE);
 
 		// Optimize model
-		Logger::out("-") << "using the GUROBI solver" << std::endl;
+        Logger::out("-") << "using the GUROBI solver (version " << GRB_VERSION_MAJOR << "." << GRB_VERSION_MINOR << ")." << std::endl;
 		model.optimize();
 
-		int status = model.get(GRB_IntAttr_Status);
-		switch (status) {
+        int status = model.get(GRB_IntAttr_Status);
+        switch (status) {
 		case GRB_OPTIMAL: {
 			objective_value_ = model.get(GRB_DoubleAttr_ObjVal);
 			result_.resize(variables.size());
@@ -163,8 +167,10 @@ bool LinearProgramSolver::_solve_GUROBI(const LinearProgram* program) {
 		return (status == GRB_OPTIMAL);
 	}
 	catch (GRBException e) {
-		std::cerr << "Error code = " << e.getErrorCode() << std::endl;
-		std::cerr << e.getMessage() << std::endl;
+        Logger::err("-") << e.getMessage() << " (error code: " << e.getErrorCode() << ")." << std::endl;
+        if (e.getErrorCode() == GRB_ERROR_NO_LICENSE) {
+            Logger::warn("-") << "Gurobi installed but license is missing or expired. Please choose another solver, e.g., SCIP." << std::endl;
+        }
 	}
 	catch (...) {
 		std::cerr << "Exception during optimization" << std::endl;

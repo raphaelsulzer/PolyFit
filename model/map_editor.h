@@ -75,6 +75,21 @@ public:
 
 	void erase_facet(Halfedge* h);
 
+    void reorient_facet(Halfedge* h);
+
+    /**
+    * Checks wether the two specified half-edges can be glued,
+    * from a topological point of view. h0 and h1 should point
+    * in reverse direction, and should be on the border.
+    */
+    bool can_glue(Halfedge* h0, Halfedge* h1);
+
+    /**
+    * h0 and h1 should point in reversed direction, and
+    * should be on the border.
+    */
+    bool glue(Halfedge* h0, Halfedge* h1);
+
 	//_____________ copy attributes _______________
 
 	void copy_attributes(Vertex* to, Vertex* from);
@@ -99,11 +114,11 @@ protected:
 	*/
 	bool can_merge_vertices(Halfedge* h0, Halfedge* h1);
 
-	/**
-	* To be explained by Nico.
-	* Note: should be called with both (h0,h1) and with (h1,h0)
-	*/
-	bool orbits_are_compatible(Halfedge* h0, Halfedge* h1);
+    /**
+    * To be explained by Nico.
+    * Note: should be called with both (h0,h1) and with (h1,h0)
+    */
+    bool orbits_are_compatible(Halfedge* h0, Halfedge* h1);
 
 	/**
 	* Checks the existence of an half_edge e such that

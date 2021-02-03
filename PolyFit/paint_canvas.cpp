@@ -37,11 +37,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "../method/face_selection.h"
 #include "../method/method_global.h"
 #include "../model/map_circulators.h"
+#include "../model/map_editor.h"
 
 #include <QFileDialog>
 #include <QMouseEvent>
 #include <QMessageBox>
-#include <QColorMap>
 #include <QColorDialog>
 
 #include <cassert>
@@ -88,8 +88,8 @@ PaintCanvas::PaintCanvas(QWidget *parent, QGLFormat format)
 
 
 PaintCanvas::~PaintCanvas() {
-	// this is required by the following destruction of textures, shaders, etc.
-	makeCurrent();
+//	// this is required by the following destruction of textures, shaders, etc.
+//	makeCurrent();
 
 	delete point_set_render_;
 	delete mesh_render_;
@@ -161,11 +161,6 @@ void PaintCanvas::init()
 	//////////////////////////////////////////////////////////////////////////
 
 	glEnable(GL_DEPTH_TEST);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  //GL_ONE_MINUS_DST_ALPHA
-
-	// for transparent 
-	glAlphaFunc(GL_GREATER, 0);
-	glEnable(GL_ALPHA_TEST);
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
 	//////////////////////////////////////////////////////////////////////////
@@ -233,8 +228,8 @@ void PaintCanvas::draw() {
 
 	bool interacting = camera()->frame()->isManipulated();
 
-	if (point_set_ && show_input_ && point_set_render_)
-		point_set_render_->draw(point_set_);
+    if (point_set_ && show_input_ && point_set_render_)
+        point_set_render_->draw(point_set_);
 
 	if (hypothesis_mesh_ && show_candidates_ && mesh_render_) {
 		EdgeStyle s = mesh_render_->mesh_style();
@@ -250,7 +245,7 @@ void PaintCanvas::draw() {
 		mesh_render_->draw(optimized_mesh_, interacting);
 	}
 
-	const static QFont font("Tekton Pro Ext", 12/*, QFont::Bold*/); // "Times", "Helvetica", "Bradley Hand ITC"
+	const static QFont font("Helvetica", 12/*, QFont::Bold*/); // "Times", "Helvetica", "Bradley Hand ITC"
 	if (show_hint_text_) {
 		if (!hint_text_.isEmpty()) {
 			glColor3f(0, 0, 0.7f);
@@ -266,7 +261,7 @@ void PaintCanvas::draw() {
 		drawText(30, 150, "  - Orbit: left button", font);
 		drawText(30, 180, "  - Pan:   right button", font);
 		drawText(30, 210, "  - Zoom:  wheel", font);
-	}
+    }
 }
 
 
@@ -718,7 +713,39 @@ void PaintCanvas::optimization() {
 	FaceSelection selector(point_set_, mesh);
 	selector.optimize(adjacency, main_window_->active_solver());
 
-	optimized_mesh_ = mesh;
+#if 0 // not stable!!!
+    { // to have consistent orientation for the final model
+        const HypothesisGenerator::Adjacency& adjacency = hypothesis_->extract_adjacency(mesh);
+        selector.re_orient(adjacency, main_window_->active_solver());
+    }
+
+    { // stitching
+        const HypothesisGenerator::Adjacency& adjacency = hypothesis_->extract_adjacency(mesh);
+        MapEditor editor(mesh);
+        for (auto pair : adjacency) {
+            if (pair.size() != 2) {
+                std::cerr << "error: an edge should be associated with two faces" << std::endl;
+                continue;
+            }
+            auto h0 = pair[0];
+            auto h1 = pair[1];
+            if (dot(Geom::vector(h0), Geom::vector(h1)) < 0)
+                editor.glue(h0->opposite(), h1->opposite());
+        }
+
+        int num = 0;
+        FOR_EACH_EDGE(Map, mesh, it) {
+            if (it->is_border_edge())
+                ++num;
+        }
+        if (num == 0)
+            Logger::out("-") << "final model is watertight" << std::endl;
+        else
+            Logger::warn("-") << "final model has " << num << " border edges" << std::endl;
+    }
+#endif
+
+    optimized_mesh_ = mesh;
 
 	main_window_->checkBoxShowInput->setChecked(false);
 	main_window_->checkBoxShowCandidates->setChecked(false);

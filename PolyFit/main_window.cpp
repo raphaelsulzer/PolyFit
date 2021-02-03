@@ -300,7 +300,7 @@ void MainWindow::createStatusBar()
 	QLabel* space1 = new QLabel;
 	statusBar()->addWidget(space1, 1);
 
-	int length = 250;
+	int length = 150;
 	numPointsLabel_ = new QLabel;
 	numPointsLabel_->setFixedWidth(length);
 	numPointsLabel_->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
@@ -323,7 +323,7 @@ void MainWindow::createStatusBar()
 
 	progress_bar_ = new QProgressBar;
 	progress_bar_->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-	progress_bar_->setFixedWidth(500);
+	progress_bar_->setFixedWidth(400);
 	statusBar()->addPermanentWidget(progress_bar_, 1);
 
 	//////////////////////////////////////////////////////////////////////////
@@ -453,7 +453,7 @@ bool MainWindow::open()
 {
 	QString fileName = QFileDialog::getOpenFileName(this,
 		tr("Open file"), curDataDirectory_,
-		tr("Supported Format (*.vg *.bvg *.obj *.png *.jpg)")
+		tr("Supported Format (*.vg *.bvg *.obj)")
 		);
 
 	if (fileName.isEmpty())
@@ -467,8 +467,7 @@ bool MainWindow::save()
 {
 	QString fileName = QFileDialog::getSaveFileName(this,
 		tr("Save file"), optimizedMeshFileName_,
-		tr("Mesh (*.obj)\n"
-			"Point Cloud (*.vg *.bvg)")
+		tr("Mesh (*.obj)")
 		);
 
 	if (fileName.isEmpty())
